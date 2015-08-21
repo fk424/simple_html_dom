@@ -1,44 +1,5 @@
 <?php
 /**
- * Website: http://sourceforge.net/projects/simplehtmldom/
- * Acknowledge: Jose Solorzano (https://sourceforge.net/projects/php-html/)
- * Contributions by:
- *     Yousuke Kumakura (Attribute filters)
- *     Vadim Voituk (Negative indexes supports of "find" method)
- *     Antcs (Constructor with automatically load contents either text or file/url)
- *
- * all affected sections have comments starting with "PaperG"
- *
- * Paperg - Added case insensitive testing of the value of the selector.
- * Paperg - Added tag_start for the starting index of tags - NOTE: This works but not accurately.
- *  This tag_start gets counted AFTER \r\n have been crushed out, and after the remove_noice calls so it will not reflect the REAL position of the tag in the source,
- *  it will almost always be smaller by some amount.
- *  We use this to determine how far into the file the tag in question is.  This "percentage will never be accurate as the $dom->size is the "real" number of bytes the dom was created from.
- *  but for most purposes, it's a really good estimation.
- * Paperg - Added the forceTagsClosed to the dom constructor.  Forcing tags closed is great for malformed html, but it CAN lead to parsing errors.
- * Allow the user to tell us how much they trust the html.
- * Paperg add the text and plaintext to the selectors for the find syntax.  plaintext implies text in the innertext of a node.  text implies that the tag is a text node.
- * This allows for us to find tags based on the text they contain.
- * Create find_ancestor_tag to see if a tag is - at any level - inside of another specific tag.
- * Paperg: added parse_charset so that we know about the character set of the source document.
- *  NOTE:  If the user's system has a routine called get_last_retrieve_url_contents_content_type availalbe, we will assume it's returning the content-type header from the
- *  last transfer or curl_exec, and we will parse that and use it in preference to any other method of charset detection.
- *
- * Found infinite loop in the case of broken html in restore_noise.  Rewrote to protect from that.
- * PaperG (John Schlick) Added get_display_size for "IMG" tags.
- *
- * Licensed under The MIT License
- * Redistributions of files must retain the above copyright notice.
- *
- * @author S.C. Chen <me578022@gmail.com>
- * @author John Schlick
- * @author Rus Carroll
- * @version 1.5 ($Rev: 196 $)
- * @package PlaceLocalInclude
- * @subpackage simple_html_dom
- */
-
-/**
  * All of the Defines for the classes below.
  * @author S.C. Chen <me578022@gmail.com>
  */
@@ -50,9 +11,9 @@ define('HDOM_TYPE_ROOT',    5);
 define('HDOM_TYPE_UNKNOWN', 6);
 define('HDOM_QUOTE_DOUBLE', 0);
 define('HDOM_QUOTE_SINGLE', 1);
-define('HDOM_QUOTE_NO',     3);
+define('HDOM_QUOTE_NO',  3);
 define('HDOM_INFO_BEGIN',   0);
-define('HDOM_INFO_END',     1);
+define('HDOM_INFO_END',  1);
 define('HDOM_INFO_QUOTE',   2);
 define('HDOM_INFO_SPACE',   3);
 define('HDOM_INFO_TEXT',    4);
@@ -62,30 +23,10 @@ define('HDOM_INFO_ENDSPACE',7);
 define('DEFAULT_TARGET_CHARSET', 'UTF-8');
 define('DEFAULT_BR_TEXT', "\r\n");
 define('DEFAULT_SPAN_TEXT', " ");
-if (!defined('MAX_FILE_SIZE')) {
-    define('MAX_FILE_SIZE', 600000);	
-}
-
+define('MAX_FILE_SIZE', 600000);
 // helper functions
 // -----------------------------------------------------------------------------
-// get html dom from file
 // $maxlen is defined in the code as PHP_STREAM_COPY_ALL which is defined as -1.
-function file_get_html($url, $use_include_path = false, $context=null, $offset = -1, $maxLen=-1, $lowercase = true, $forceTagsClosed=true, $target_charset = DEFAULT_TARGET_CHARSET, $stripRN=true, $defaultBRText=DEFAULT_BR_TEXT, $defaultSpanText=DEFAULT_SPAN_TEXT)
-{
-    // We DO force the tags to be terminated.
-    $dom = new simple_html_dom(null, $lowercase, $forceTagsClosed, $target_charset, $stripRN, $defaultBRText, $defaultSpanText);
-    // For sourceforge users: uncomment the next line and comment the retreive_url_contents line 2 lines down if it is not already done.
-    $contents = file_get_contents($url, $use_include_path, $context, $offset);
-    // Paperg - use our own mechanism for getting the contents as we want to control the timeout.
-    //$contents = retrieve_url_contents($url);
-    if (empty($contents) || strlen($contents) > MAX_FILE_SIZE)
-    {
-        return false;
-    }
-    // The second parameter can force the selectors to all be lowercase.
-    $dom->load($contents, $lowercase, $stripRN);
-    return $dom;
-}
 
 // get html dom from string
 function str_get_html($str, $lowercase=true, $forceTagsClosed=true, $target_charset = DEFAULT_TARGET_CHARSET, $stripRN=true, $defaultBRText=DEFAULT_BR_TEXT, $defaultSpanText=DEFAULT_SPAN_TEXT)
@@ -99,13 +40,6 @@ function str_get_html($str, $lowercase=true, $forceTagsClosed=true, $target_char
     $dom->load($str, $lowercase, $stripRN);
     return $dom;
 }
-
-// dump html dom tree
-function dump_html_tree($node, $show_attr=true, $deep=0)
-{
-    $node->dump($node);
-}
-
 
 /**
  * simple html dom node
@@ -176,11 +110,9 @@ class simple_html_dom_node
         }
     }
 
-
     // Debugging function to dump a single dom node with a bunch of information about it.
     function dump_node($echo=true)
     {
-
         $string = $this->tag;
         if (count($this->attr)>0)
         {
@@ -220,9 +152,7 @@ class simple_html_dom_node
         if (isset($node->_[HDOM_INFO_INNER]))
         {
             $string .= $node->_[HDOM_INFO_INNER] . "'";
-        }
-        else
-        {
+        } else {
             $string .= ' NULL ';
         }
 
@@ -231,13 +161,10 @@ class simple_html_dom_node
         $string .= " tag_start: " . $this->tag_start;
         $string .= "\n";
 
-        if ($echo)
-        {
+        if ($echo) {
             echo $string;
             return;
-        }
-        else
-        {
+        } else {
             return $string;
         }
     }
@@ -271,7 +198,10 @@ class simple_html_dom_node
         {
             return $this->children;
         }
-        if (isset($this->children[$idx])) return $this->children[$idx];
+        if (isset($this->children[$idx]))
+        {
+            return $this->children[$idx];
+        }
         return null;
     }
 
@@ -331,15 +261,15 @@ class simple_html_dom_node
     // function to locate a specific ancestor tag in the path to the root.
     function find_ancestor_tag($tag)
     {
-        global $debugObject;
-        if (is_object($debugObject)) { $debugObject->debugLogEntry(1); }
+        global $debug_object;
+        if (is_object($debug_object)) { $debug_object->debug_log_entry(1); }
 
         // Start by including ourselves in the comparison.
         $returnDom = $this;
 
         while (!is_null($returnDom))
         {
-            if (is_object($debugObject)) { $debugObject->debugLog(2, "Current tag is: " . $returnDom->tag); }
+            if (is_object($debug_object)) { $debug_object->debug_log(2, "Current tag is: " . $returnDom->tag); }
 
             if ($returnDom->tag == $tag)
             {
@@ -353,54 +283,59 @@ class simple_html_dom_node
     // get dom node's inner html
     function innertext()
     {
-        if (isset($this->_[HDOM_INFO_INNER])) return $this->_[HDOM_INFO_INNER];
-        if (isset($this->_[HDOM_INFO_TEXT])) return $this->dom->restore_noise($this->_[HDOM_INFO_TEXT]);
+        if (isset($this->_[HDOM_INFO_INNER])) {
+            return $this->_[HDOM_INFO_INNER];
+        }
+        if (isset($this->_[HDOM_INFO_TEXT])) {
+            return $this->dom->restore_noise($this->_[HDOM_INFO_TEXT]);
+        }
 
         $ret = '';
-        foreach ($this->nodes as $n)
+        foreach ($this->nodes as $n) {
             $ret .= $n->outertext();
+        }
         return $ret;
     }
 
     // get dom node's outer text (with tag)
     function outertext()
     {
-        global $debugObject;
-        if (is_object($debugObject))
-        {
+        global $debug_object;
+        if (is_object($debug_object)) {
             $text = '';
-            if ($this->tag == 'text')
-            {
-                if (!empty($this->text))
-                {
+            if ($this->tag == 'text') {
+                if (!empty($this->text)) {
                     $text = " with text: " . $this->text;
                 }
             }
-            $debugObject->debugLog(1, 'Innertext of tag: ' . $this->tag . $text);
+            $debug_object->debug_log(1, 'Innertext of tag: ' . $this->tag . $text);
         }
 
-        if ($this->tag==='root') return $this->innertext();
+        if ($this->tag==='root') {
+            return $this->innertext();
+        }
 
         // trigger callback
-        if ($this->dom && $this->dom->callback!==null)
-        {
+        if ($this->dom && $this->dom->callback!==null) {
             call_user_func_array($this->dom->callback, array($this));
         }
 
-        if (isset($this->_[HDOM_INFO_OUTER])) return $this->_[HDOM_INFO_OUTER];
-        if (isset($this->_[HDOM_INFO_TEXT])) return $this->dom->restore_noise($this->_[HDOM_INFO_TEXT]);
+        if (isset($this->_[HDOM_INFO_OUTER])) {
+            return $this->_[HDOM_INFO_OUTER];
+        }
+        if (isset($this->_[HDOM_INFO_TEXT])) {
+            return $this->dom->restore_noise($this->_[HDOM_INFO_TEXT]);
+        }
 
         // render begin tag
-        if ($this->dom && $this->dom->nodes[$this->_[HDOM_INFO_BEGIN]])
-        {
+        if ($this->dom && $this->dom->nodes[$this->_[HDOM_INFO_BEGIN]]) {
             $ret = $this->dom->nodes[$this->_[HDOM_INFO_BEGIN]]->makeup();
         } else {
             $ret = "";
         }
 
         // render inner text
-        if (isset($this->_[HDOM_INFO_INNER]))
-        {
+        if (isset($this->_[HDOM_INFO_INNER])) {
             // If it's a br tag...  don't return the HDOM_INNER_INFO that we may or may not have added.
             if ($this->tag != "br")
             {
@@ -484,14 +419,17 @@ class simple_html_dom_node
 
             $ret .= $this->_[HDOM_INFO_SPACE][$i][0];
             //no value attr: nowrap, checked selected...
-            if ($val===true)
+            if ($val===true) {
                 $ret .= $key;
-            else {
-                switch ($this->_[HDOM_INFO_QUOTE][$i])
-                {
-                    case HDOM_QUOTE_DOUBLE: $quote = '"'; break;
-                    case HDOM_QUOTE_SINGLE: $quote = '\''; break;
-                    default: $quote = '';
+            } else {
+                switch ($this->_[HDOM_INFO_QUOTE][$i]) {
+                case HDOM_QUOTE_DOUBLE:
+                    $quote = '"';
+                    break;
+                case HDOM_QUOTE_SINGLE:
+                    $quote = '\'';
+                    break;
+                default: $quote = '';
                 }
                 $ret .= $key.$this->_[HDOM_INFO_SPACE][$i][1].'='.$this->_[HDOM_INFO_SPACE][$i][2].$quote.$val.$quote;
             }
@@ -505,25 +443,28 @@ class simple_html_dom_node
     function find($selector, $idx=null, $lowercase=false)
     {
         $selectors = $this->parse_selector($selector);
-        if (($count=count($selectors))===0) return array();
+        if (($count=count($selectors))===0) {
+            return array();
+        }
         $found_keys = array();
 
         // find each selector
-        for ($c=0; $c<$count; ++$c)
-        {
+        for ($c=0; $c<$count; ++$c) {
             // The change on the below line was documented on the sourceforge code tracker id 2788009
             // used to be: if (($levle=count($selectors[0]))===0) return array();
-            if (($levle=count($selectors[$c]))===0) return array();
-            if (!isset($this->_[HDOM_INFO_BEGIN])) return array();
+            if (($levle = count($selectors[$c])) === 0) {
+                return array();
+            }
+            if (!isset($this->_[HDOM_INFO_BEGIN])) {
+                return array();
+            }
 
             $head = array($this->_[HDOM_INFO_BEGIN]=>1);
 
             // handle descendant selectors, no recursive!
-            for ($l=0; $l<$levle; ++$l)
-            {
+            for ($l=0; $l<$levle; ++$l) {
                 $ret = array();
-                foreach ($head as $k=>$v)
-                {
+                foreach ($head as $k=>$v) {
                     $n = ($k===-1) ? $this->dom->root : $this->dom->nodes[$k];
                     //PaperG - Pass this optional parameter on to the seek function.
                     $n->seek($selectors[$c][$l], $ret, $lowercase);
@@ -531,10 +472,11 @@ class simple_html_dom_node
                 $head = $ret;
             }
 
-            foreach ($head as $k=>$v)
-            {
+            foreach ($head as $k=>$v) {
                 if (!isset($found_keys[$k]))
+                {
                     $found_keys[$k] = 1;
+                }
             }
         }
 
@@ -555,8 +497,8 @@ class simple_html_dom_node
     // PaperG - added parameter to allow for case insensitive testing of the value of a selector.
     protected function seek($selector, &$ret, $lowercase=false)
     {
-        global $debugObject;
-        if (is_object($debugObject)) { $debugObject->debugLogEntry(1); }
+        global $debug_object;
+        if (is_object($debug_object)) { $debug_object->debug_log_entry(1); }
 
         list($tag, $key, $val, $exp, $no_key) = $selector;
 
@@ -617,7 +559,7 @@ class simple_html_dom_node
                     // this is a normal search, we want the value of that attribute of the tag.
                     $nodeKeyValue = $node->attr[$key];
                 }
-                if (is_object($debugObject)) {$debugObject->debugLog(2, "testing node: " . $node->tag . " for attribute: " . $key . $exp . $val . " where nodes value is: " . $nodeKeyValue);}
+                if (is_object($debug_object)) {$debug_object->debug_log(2, "testing node: " . $node->tag . " for attribute: " . $key . $exp . $val . " where nodes value is: " . $nodeKeyValue);}
 
                 //PaperG - If lowercase is set, do a case insensitive test of the value of the selector.
                 if ($lowercase) {
@@ -625,7 +567,7 @@ class simple_html_dom_node
                 } else {
                     $check = $this->match($exp, $val, $nodeKeyValue);
                 }
-                if (is_object($debugObject)) {$debugObject->debugLog(2, "after match: " . ($check ? "true" : "false"));}
+                if (is_object($debug_object)) {$debug_object->debug_log(2, "after match: " . ($check ? "true" : "false"));}
 
                 // handle multiple class
                 if (!$check && strcasecmp($key, 'class')===0) {
@@ -647,12 +589,12 @@ class simple_html_dom_node
             unset($node);
         }
         // It's passed by reference so this is actually what this function returns.
-        if (is_object($debugObject)) {$debugObject->debugLog(1, "EXIT - ret: ", $ret);}
+        if (is_object($debug_object)) {$debug_object->debug_log(1, "EXIT - ret: ", $ret);}
     }
 
     protected function match($exp, $pattern, $value) {
-        global $debugObject;
-        if (is_object($debugObject)) {$debugObject->debugLogEntry(1);}
+        global $debug_object;
+        if (is_object($debug_object)) {$debug_object->debug_log_entry(1);}
 
         switch ($exp) {
             case '=':
@@ -673,8 +615,8 @@ class simple_html_dom_node
     }
 
     protected function parse_selector($selector_string) {
-        global $debugObject;
-        if (is_object($debugObject)) {$debugObject->debugLogEntry(1);}
+        global $debug_object;
+        if (is_object($debug_object)) {$debug_object->debug_log_entry(1);}
 
         // pattern of CSS selectors, modified from mootools
         // Paperg: Add the colon to the attrbute, so that it properly finds <tag attr:ibute="something" > like google does.
@@ -682,10 +624,10 @@ class simple_html_dom_node
 // Notice the \[ starting the attbute?  and the @? following?  This implies that an attribute can begin with an @ sign that is not captured.
 // This implies that an html attribute specifier may start with an @ sign that is NOT captured by the expression.
 // farther study is required to determine of this should be documented or removed.
-//        $pattern = "/([\w-:\*]*)(?:\#([\w-]+)|\.([\w-]+))?(?:\[@?(!?[\w-]+)(?:([!*^$]?=)[\"']?(.*?)[\"']?)?\])?([\/, ]+)/is";
+//      $pattern = "/([\w-:\*]*)(?:\#([\w-]+)|\.([\w-]+))?(?:\[@?(!?[\w-]+)(?:([!*^$]?=)[\"']?(.*?)[\"']?)?\])?([\/, ]+)/is";
         $pattern = "/([\w-:\*]*)(?:\#([\w-]+)|\.([\w-]+))?(?:\[@?(!?[\w-:]+)(?:([!*^$]?=)[\"']?(.*?)[\"']?)?\])?([\/, ]+)/is";
         preg_match_all($pattern, trim($selector_string).' ', $matches, PREG_SET_ORDER);
-        if (is_object($debugObject)) {$debugObject->debugLog(2, "Matches Array: ", $matches);}
+        if (is_object($debug_object)) {$debug_object->debug_log(2, "Matches Array: ", $matches);}
 
         $selectors = array();
         $result = array();
@@ -720,12 +662,14 @@ class simple_html_dom_node
         return $selectors;
     }
 
-    function __get($name) {
+    function __get($name)
+    {
         if (isset($this->attr[$name]))
         {
             return $this->convert_text($this->attr[$name]);
         }
-        switch ($name) {
+        switch ($name)
+        {
             case 'outertext': return $this->outertext();
             case 'innertext': return $this->innertext();
             case 'plaintext': return $this->text();
@@ -734,22 +678,30 @@ class simple_html_dom_node
         }
     }
 
-    function __set($name, $value) {
-        switch ($name) {
+    function __set($name, $value)
+    {
+        global $debug_object;
+        if (is_object($debug_object)) {$debug_object->debug_log_entry(1);}
+
+        switch ($name)
+        {
             case 'outertext': return $this->_[HDOM_INFO_OUTER] = $value;
             case 'innertext':
                 if (isset($this->_[HDOM_INFO_TEXT])) return $this->_[HDOM_INFO_TEXT] = $value;
                 return $this->_[HDOM_INFO_INNER] = $value;
         }
-        if (!isset($this->attr[$name])) {
+        if (!isset($this->attr[$name]))
+        {
             $this->_[HDOM_INFO_SPACE][] = array(' ', '', '');
             $this->_[HDOM_INFO_QUOTE][] = HDOM_QUOTE_DOUBLE;
         }
         $this->attr[$name] = $value;
     }
 
-    function __isset($name) {
-        switch ($name) {
+    function __isset($name)
+    {
+        switch ($name)
+        {
             case 'outertext': return true;
             case 'innertext': return true;
             case 'plaintext': return true;
@@ -766,8 +718,8 @@ class simple_html_dom_node
     // PaperG - Function to convert the text from one character set to another if the two sets are not the same.
     function convert_text($text)
     {
-        global $debugObject;
-        if (is_object($debugObject)) {$debugObject->debugLogEntry(1);}
+        global $debug_object;
+        if (is_object($debug_object)) {$debug_object->debug_log_entry(1);}
 
         $converted_text = $text;
 
@@ -779,7 +731,7 @@ class simple_html_dom_node
             $sourceCharset = strtoupper($this->dom->_charset);
             $targetCharset = strtoupper($this->dom->_target_charset);
         }
-        if (is_object($debugObject)) {$debugObject->debugLog(3, "source charset: " . $sourceCharset . " target charaset: " . $targetCharset);}
+        if (is_object($debug_object)) {$debug_object->debug_log(3, "source charset: " . $sourceCharset . " target charaset: " . $targetCharset);}
 
         if (!empty($sourceCharset) && !empty($targetCharset) && (strcasecmp($sourceCharset, $targetCharset) != 0))
         {
@@ -863,7 +815,7 @@ class simple_html_dom_node
      */
     function get_display_size()
     {
-        global $debugObject;
+        global $debug_object;
 
         $width = -1;
         $height = -1;
@@ -1012,7 +964,7 @@ class simple_html_dom
         'p'=>array('p'=>1),
         'nobr'=>array('nobr'=>1),
         'b'=>array('b'=>1),
-		'option'=>array('option'=>1),
+        'option'=>array('option'=>1),
     );
 
     function __construct($str=null, $lowercase=true, $forceTagsClosed=true, $target_charset=DEFAULT_TARGET_CHARSET, $stripRN=true, $defaultBRText=DEFAULT_BR_TEXT, $defaultSpanText=DEFAULT_SPAN_TEXT)
@@ -1043,14 +995,14 @@ class simple_html_dom
     // load html from string
     function load($str, $lowercase=true, $stripRN=true, $defaultBRText=DEFAULT_BR_TEXT, $defaultSpanText=DEFAULT_SPAN_TEXT)
     {
-        global $debugObject;
+        global $debug_object;
 
         // prepare
         $this->prepare($str, $lowercase, $stripRN, $defaultBRText, $defaultSpanText);
-        // strip out comments
-        $this->remove_noise("'<!--(.*?)-->'is");
         // strip out cdata
         $this->remove_noise("'<!\[CDATA\[(.*?)\]\]>'is", true);
+        // strip out comments
+        $this->remove_noise("'<!--(.*?)-->'is");
         // Per sourceforge http://sourceforge.net/tracker/?func=detail&aid=2949097&group_id=218559&atid=1044037
         // Script tags removal now preceeds style tag removal.
         // strip out <script> tags
@@ -1189,7 +1141,7 @@ class simple_html_dom
     // (or the content_type header from the last transfer), we will parse THAT, and if a charset is specified, we will use it over any other mechanism.
     protected function parse_charset()
     {
-        global $debugObject;
+        global $debug_object;
 
         $charset = null;
 
@@ -1200,22 +1152,22 @@ class simple_html_dom
             if ($success)
             {
                 $charset = $matches[1];
-                if (is_object($debugObject)) {$debugObject->debugLog(2, 'header content-type found charset of: ' . $charset);}
+                if (is_object($debug_object)) {$debug_object->debug_log(2, 'header content-type found charset of: ' . $charset);}
             }
 
         }
 
         if (empty($charset))
         {
-            $el = $this->root->find('meta[http-equiv=Content-Type]',0);
+            $el = $this->root->find('meta[http-equiv=Content-Type]',0, true);
             if (!empty($el))
             {
                 $fullvalue = $el->content;
-                if (is_object($debugObject)) {$debugObject->debugLog(2, 'meta content-type tag found' . $fullvalue);}
+                if (is_object($debug_object)) {$debug_object->debug_log(2, 'meta content-type tag found' . $fullvalue);}
 
                 if (!empty($fullvalue))
                 {
-                    $success = preg_match('/charset=(.+)/', $fullvalue, $matches);
+                    $success = preg_match('/charset=(.+)/i', $fullvalue, $matches);
                     if ($success)
                     {
                         $charset = $matches[1];
@@ -1223,7 +1175,7 @@ class simple_html_dom
                     else
                     {
                         // If there is a meta tag, and they don't specify the character set, research says that it's typically ISO-8859-1
-                        if (is_object($debugObject)) {$debugObject->debugLog(2, 'meta content-type tag couldn\'t be parsed. using iso-8859 default.');}
+                        if (is_object($debug_object)) {$debug_object->debug_log(2, 'meta content-type tag couldn\'t be parsed. using iso-8859 default.');}
                         $charset = 'ISO-8859-1';
                     }
                 }
@@ -1233,14 +1185,19 @@ class simple_html_dom
         // If we couldn't find a charset above, then lets try to detect one based on the text we got...
         if (empty($charset))
         {
-            // Have php try to detect the encoding from the text given to us.
-            $charset = mb_detect_encoding($this->root->plaintext . "ascii", $encoding_list = array( "UTF-8", "CP1252" ) );
-            if (is_object($debugObject)) {$debugObject->debugLog(2, 'mb_detect found: ' . $charset);}
+            // Use this in case mb_detect_charset isn't installed/loaded on this machine.
+            $charset = false;
+            if (function_exists('mb_detect_encoding'))
+            {
+                // Have php try to detect the encoding from the text given to us.
+                $charset = mb_detect_encoding($this->root->plaintext . "ascii", $encoding_list = array( "UTF-8", "CP1252" ) );
+                if (is_object($debug_object)) {$debug_object->debug_log(2, 'mb_detect found: ' . $charset);}
+            }
 
             // and if this doesn't work...  then we need to just wrongheadedly assume it's UTF-8 so that we can move on - cause this will usually give us most of what we need...
             if ($charset === false)
             {
-                if (is_object($debugObject)) {$debugObject->debugLog(2, 'since mb_detect failed - using default of utf-8');}
+                if (is_object($debug_object)) {$debug_object->debug_log(2, 'since mb_detect failed - using default of utf-8');}
                 $charset = 'UTF-8';
             }
         }
@@ -1248,11 +1205,11 @@ class simple_html_dom
         // Since CP1252 is a superset, if we get one of it's subsets, we want it instead.
         if ((strtolower($charset) == strtolower('ISO-8859-1')) || (strtolower($charset) == strtolower('Latin1')) || (strtolower($charset) == strtolower('Latin-1')))
         {
-            if (is_object($debugObject)) {$debugObject->debugLog(2, 'replacing ' . $charset . ' with CP1252 as its a superset');}
+            if (is_object($debug_object)) {$debug_object->debug_log(2, 'replacing ' . $charset . ' with CP1252 as its a superset');}
             $charset = 'CP1252';
         }
 
-        if (is_object($debugObject)) {$debugObject->debugLog(1, 'EXIT - ' . $charset);}
+        if (is_object($debug_object)) {$debug_object->debug_log(1, 'EXIT - ' . $charset);}
 
         return $this->_charset = $charset;
     }
@@ -1617,15 +1574,15 @@ class simple_html_dom
     // save the noise in the $this->noise array.
     protected function remove_noise($pattern, $remove_tag=false)
     {
-        global $debugObject;
-        if (is_object($debugObject)) { $debugObject->debugLogEntry(1); }
+        global $debug_object;
+        if (is_object($debug_object)) { $debug_object->debug_log_entry(1); }
 
         $count = preg_match_all($pattern, $this->doc, $matches, PREG_SET_ORDER|PREG_OFFSET_CAPTURE);
 
         for ($i=$count-1; $i>-1; --$i)
         {
             $key = '___noise___'.sprintf('% 5d', count($this->noise)+1000);
-            if (is_object($debugObject)) { $debugObject->debugLog(2, 'key is: ' . $key); }
+            if (is_object($debug_object)) { $debug_object->debug_log(2, 'key is: ' . $key); }
             $idx = ($remove_tag) ? 0 : 1;
             $this->noise[$key] = $matches[$i][$idx][0];
             $this->doc = substr_replace($this->doc, $key, $matches[$i][$idx][1], strlen($matches[$i][$idx][0]));
@@ -1642,8 +1599,8 @@ class simple_html_dom
     // restore noise to html content
     function restore_noise($text)
     {
-        global $debugObject;
-        if (is_object($debugObject)) { $debugObject->debugLogEntry(1); }
+        global $debug_object;
+        if (is_object($debug_object)) { $debug_object->debug_log_entry(1); }
 
         while (($pos=strpos($text, '___noise___'))!==false)
         {
@@ -1651,7 +1608,7 @@ class simple_html_dom
             if (strlen($text) > $pos+15)
             {
                 $key = '___noise___'.$text[$pos+11].$text[$pos+12].$text[$pos+13].$text[$pos+14].$text[$pos+15];
-                if (is_object($debugObject)) { $debugObject->debugLog(2, 'located key of: ' . $key); }
+                if (is_object($debug_object)) { $debug_object->debug_log(2, 'located key of: ' . $key); }
 
                 if (isset($this->noise[$key]))
                 {
@@ -1675,8 +1632,8 @@ class simple_html_dom
     // Sometimes we NEED one of the noise elements.
     function search_noise($text)
     {
-        global $debugObject;
-        if (is_object($debugObject)) { $debugObject->debugLogEntry(1); }
+        global $debug_object;
+        if (is_object($debug_object)) { $debug_object->debug_log_entry(1); }
 
         foreach($this->noise as $noiseElement)
         {
@@ -1709,16 +1666,46 @@ class simple_html_dom
     }
 
     // camel naming conventions
-    function childNodes($idx=-1) {return $this->root->childNodes($idx);}
-    function firstChild() {return $this->root->first_child();}
-    function lastChild() {return $this->root->last_child();}
-    function createElement($name, $value=null) {return @str_get_html("<$name>$value</$name>")->first_child();}
-    function createTextNode($value) {return @end(str_get_html($value)->nodes);}
-    function getElementById($id) {return $this->find("#$id", 0);}
-    function getElementsById($id, $idx=null) {return $this->find("#$id", $idx);}
-    function getElementByTagName($name) {return $this->find($name, 0);}
-    function getElementsByTagName($name, $idx=-1) {return $this->find($name, $idx);}
-    function loadFile() {$args = func_get_args();$this->load_file($args);}
+    function childNodes($idx=-1) {
+        return $this->root->childNodes($idx);
+    }
+
+    function firstChild() {
+        return $this->root->first_child();
+    }
+
+    function lastChild() {
+        return $this->root->last_child();
+    }
+
+    function createElement($name, $value=null) {
+        return @str_get_html("<$name>$value</$name>")->first_child();
+    }
+
+    function createTextNode($value) {
+        return @end(str_get_html($value)->nodes);
+    }
+
+    function getElementById($id) {
+        return $this->find("#$id", 0);
+    }
+
+    function getElementsById($id, $idx=null) {
+        return $this->find("#$id", $idx);
+    }
+
+    function getElementByTagName($name) {
+        return $this->find($name, 0);
+    }
+
+    function getElementsByTagName($name, $idx=-1) {
+        return $this->find($name, $idx);
+    }
+
+    function loadFile() {
+        $args = func_get_args();
+        $this->load_file($args);
+    }
 }
 
 ?>
