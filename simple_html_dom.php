@@ -9,9 +9,11 @@ define('HDOM_TYPE_TEXT',    3);
 define('HDOM_TYPE_ENDTAG',  4);
 define('HDOM_TYPE_ROOT',    5);
 define('HDOM_TYPE_UNKNOWN', 6);
+
 define('HDOM_QUOTE_DOUBLE', 0);
 define('HDOM_QUOTE_SINGLE', 1);
 define('HDOM_QUOTE_NO',  3);
+
 define('HDOM_INFO_BEGIN',   0);
 define('HDOM_INFO_END',  1);
 define('HDOM_INFO_QUOTE',   2);
@@ -20,8 +22,10 @@ define('HDOM_INFO_TEXT',    4);
 define('HDOM_INFO_INNER',   5);
 define('HDOM_INFO_OUTER',   6);
 define('HDOM_INFO_ENDSPACE',7);
+
 define('DEFAULT_BR_TEXT', "\r\n");
 define('DEFAULT_SPAN_TEXT', " ");
+
 define('MAX_FILE_SIZE', 600000);
 // helper functions
 // -----------------------------------------------------------------------------
@@ -31,8 +35,7 @@ define('MAX_FILE_SIZE', 600000);
 function str_get_html($str, $lowercase=true, $forceTagsClosed=true, $stripRN=true, $defaultBRText=DEFAULT_BR_TEXT, $defaultSpanText=DEFAULT_SPAN_TEXT)
 {
     $dom = new simple_html_dom(null, $lowercase, $forceTagsClosed, $stripRN, $defaultBRText, $defaultSpanText);
-    if (empty($str) || strlen($str) > MAX_FILE_SIZE)
-    {
+    if (empty($str) || strlen($str) > MAX_FILE_SIZE) {
         $dom->clear();
         return false;
     }
@@ -922,32 +925,28 @@ class simple_html_dom
     public $default_span_text = "";
 
     // use isset instead of in_array, performance boost about 30%...
-    protected $self_closing_tags = array('img'=>1, 'br'=>1, 'input'=>1, 'meta'=>1, 'link'=>1, 'hr'=>1, 'base'=>1, 'embed'=>1, 'spacer'=>1);
-    protected $block_tags = array('root'=>1, 'body'=>1, 'form'=>1, 'div'=>1, 'span'=>1, 'table'=>1);
+    protected $self_closing_tags = array('img' => 1, 'br' => 1, 'input' => 1, 'meta' => 1, 'link' => 1, 'hr' => 1, 'base' => 1, 'embed' => 1, 'spacer' => 1);
+    protected $block_tags = array('root' => 1, 'body' => 1, 'form' => 1, 'div' => 1, 'span' => 1, 'table' => 1);
     // Known sourceforge issue #2977341
     // B tags that are not closed cause us to return everything to the end of the document.
     protected $optional_closing_tags = array(
-        'tr'=>array('tr'=>1, 'td'=>1, 'th'=>1),
-        'th'=>array('th'=>1),
-        'td'=>array('td'=>1),
-        'li'=>array('li'=>1),
-        'dt'=>array('dt'=>1, 'dd'=>1),
-        'dd'=>array('dd'=>1, 'dt'=>1),
-        'dl'=>array('dd'=>1, 'dt'=>1),
-        'p'=>array('p'=>1),
-        'nobr'=>array('nobr'=>1),
-        'b'=>array('b'=>1),
-        'option'=>array('option'=>1),
+        'tr' => array('tr' => 1, 'td' => 1, 'th' => 1),
+        'th' => array('th' => 1),
+        'td' => array('td' => 1),
+        'li' => array('li' => 1),
+        'dt' => array('dt' => 1, 'dd' => 1),
+        'dd' => array('dd' => 1, 'dt' => 1),
+        'dl' => array('dd' => 1, 'dt' => 1),
+        'p' => array('p' => 1),
+        'nobr' => array('nobr' => 1),
+        'b' => array('b' => 1),
+        'option' => array('option' => 1),
     );
 
     function __construct($str=null, $lowercase=true, $forceTagsClosed=true, $stripRN=true, $defaultBRText=DEFAULT_BR_TEXT, $defaultSpanText=DEFAULT_SPAN_TEXT)
     {
         if ($str) {
-            if (preg_match("/^http:\/\//i",$str) || is_file($str)) {
-                $this->load_file($str);
-            } else {
-                $this->load($str, $lowercase, $stripRN, $defaultBRText, $defaultSpanText);
-            }
+            $this->load($str, $lowercase, $stripRN, $defaultBRText, $defaultSpanText);
         }
         // Forcing tags to be closed implies that we don't trust the html, but it can lead to parsing errors if we SHOULD trust the html.
         if (!$forceTagsClosed) {
@@ -993,18 +992,6 @@ class simple_html_dom
 
         // make load function chainable
         return $this;
-    }
-
-    // load html from file
-    function load_file()
-    {
-        $args = func_get_args();
-        $this->load(call_user_func_array('file_get_contents', $args), true);
-        // Throw an error if we can't properly load the dom.
-        if (($error=error_get_last()) !== null) {
-            $this->clear();
-            return false;
-        }
     }
 
     // set callback function
@@ -1062,13 +1049,13 @@ class simple_html_dom
         unset($this->noise);
     }
 
-    function dump($show_attr=true)
+    function dump($show_attr = true)
     {
         $this->root->dump($show_attr);
     }
 
     // prepare HTML data and init everything
-    protected function prepare($str, $lowercase=true, $stripRN=true, $defaultBRText=DEFAULT_BR_TEXT, $defaultSpanText=DEFAULT_SPAN_TEXT)
+    protected function prepare($str, $lowercase = true, $stripRN = true, $defaultBRText = DEFAULT_BR_TEXT, $defaultSpanText = DEFAULT_SPAN_TEXT)
     {
         $this->clear();
 
@@ -1605,10 +1592,6 @@ class simple_html_dom
         return $this->find($name, $idx);
     }
 
-    function loadFile() {
-        $args = func_get_args();
-        $this->load_file($args);
-    }
 }
 
 ?>
