@@ -20,7 +20,6 @@ define('HDOM_INFO_TEXT',    4);
 define('HDOM_INFO_INNER',   5);
 define('HDOM_INFO_OUTER',   6);
 define('HDOM_INFO_ENDSPACE',7);
-define('DEFAULT_TARGET_CHARSET', 'UTF-8');
 define('DEFAULT_BR_TEXT', "\r\n");
 define('DEFAULT_SPAN_TEXT', " ");
 define('MAX_FILE_SIZE', 600000);
@@ -29,9 +28,9 @@ define('MAX_FILE_SIZE', 600000);
 // $maxlen is defined in the code as PHP_STREAM_COPY_ALL which is defined as -1.
 
 // get html dom from string
-function str_get_html($str, $lowercase=true, $forceTagsClosed=true, $target_charset = DEFAULT_TARGET_CHARSET, $stripRN=true, $defaultBRText=DEFAULT_BR_TEXT, $defaultSpanText=DEFAULT_SPAN_TEXT)
+function str_get_html($str, $lowercase=true, $forceTagsClosed=true, $stripRN=true, $defaultBRText=DEFAULT_BR_TEXT, $defaultSpanText=DEFAULT_SPAN_TEXT)
 {
-    $dom = new simple_html_dom(null, $lowercase, $forceTagsClosed, $target_charset, $stripRN, $defaultBRText, $defaultSpanText);
+    $dom = new simple_html_dom(null, $lowercase, $forceTagsClosed, $stripRN, $defaultBRText, $defaultSpanText);
     if (empty($str) || strlen($str) > MAX_FILE_SIZE)
     {
         $dom->clear();
@@ -332,7 +331,7 @@ class simple_html_dom_node
         } else {
             if ($this->nodes) {
                 foreach ($this->nodes as $n) {
-                    $ret .= $this->convert_text($n->outertext());
+                    $ret .= $n->outertext();
                 }
             }
         }
@@ -368,7 +367,7 @@ class simple_html_dom_node
         // WHY is this happening?
         if (!is_null($this->nodes)) {
             foreach ($this->nodes as $n){
-                $ret .= $this->convert_text($n->text());
+                $ret .= $n->text();
             }
 
             // If this node is a span... add a space at the end of it so multiple spans don't run into each other.  This is plaintext after all.
@@ -688,7 +687,7 @@ class simple_html_dom_node
     function __get($name)
     {
         if (isset($this->attr[$name])) {
-            return $this->convert_text($this->attr[$name]);
+            return $this->attr[$name];
         }
         switch ($name) {
             case 'outertext': return $this->outertext();
@@ -734,94 +733,6 @@ class simple_html_dom_node
         if (isset($this->attr[$name])) {
             unset($this->attr[$name]);
         }
-    }
-
-    // PaperG - Function to convert the text from one character set to another if the two sets are not the same.
-    function convert_text($text)
-    {
-        global $debug_object;
-        if (is_object($debug_object)) {
-            $debug_object->debug_log_entry(1);
-        }
-
-        $converted_text = $text;
-
-        $sourceCharset = "";
-        $targetCharset = "";
-
-        if ($this->dom) {
-            $sourceCharset = strtoupper($this->dom->_charset);
-            $targetCharset = strtoupper($this->dom->_target_charset);
-        }
-        if (is_object($debug_object)) {
-            $debug_object->debug_log(3, "source charset: " . $sourceCharset . " target charaset: " . $targetCharset);
-        }
-
-        if (!empty($sourceCharset) && !empty($targetCharset) && (strcasecmp($sourceCharset, $targetCharset) != 0)) {
-            // Check if the reported encoding could have been incorrect and the text is actually already UTF-8
-            if ((strcasecmp($targetCharset, 'UTF-8') == 0) && ($this->is_utf8($text))) {
-                $converted_text = $text;
-            } else {
-                $converted_text = iconv($sourceCharset, $targetCharset, $text);
-            }
-        }
-
-        // Lets make sure that we don't have that silly BOM issue with any of the utf-8 text we output.
-        if ($targetCharset == 'UTF-8') {
-            if (substr($converted_text, 0, 3) == "\xef\xbb\xbf") {
-                $converted_text = substr($converted_text, 3);
-            }
-            if (substr($converted_text, -3) == "\xef\xbb\xbf") {
-                $converted_text = substr($converted_text, 0, -3);
-            }
-        }
-
-        return $converted_text;
-    }
-
-    /**
-    * Returns true if $string is valid UTF-8 and false otherwise.
-    *
-    * @param mixed $str String to be tested
-    * @return boolean
-    */
-    static function is_utf8($str)
-    {
-        $c=0; $b=0;
-        $bits=0;
-        $len=strlen($str);
-        for($i=0; $i<$len; $i++) {
-            $c = ord($str[$i]);
-            if ($c > 128) {
-                if (($c >= 254)) {
-                    return false;
-                } elseif ($c >= 252) {
-                    $bits=6;
-                } elseif ($c >= 248) {
-                    $bits=5;
-                } elseif ($c >= 240) {
-                    $bits=4;
-                } elseif ($c >= 224) {
-                    $bits=3;
-                } elseif ($c >= 192) {
-                    $bits=2;
-                } else {
-                    return false;
-                }
-                if (($i + $bits) > $len) {
-                    return false;
-                }
-                while($bits > 1) {
-                    $i++;
-                    $b = ord($str[$i]);
-                    if ($b < 128 || $b > 191) {
-                        return false;
-                    }
-                    $bits--;
-                }
-            }
-        }
-        return true;
     }
 
     /**
@@ -1007,8 +918,6 @@ class simple_html_dom
     protected $token_slash = " />\r\n\t";
     protected $token_attr = ' >';
     // Note that this is referenced by a child node, and so it needs to be public for that node to see this information.
-    public $_charset = '';
-    public $_target_charset = '';
     protected $default_br_text = "";
     public $default_span_text = "";
 
@@ -1031,7 +940,7 @@ class simple_html_dom
         'option'=>array('option'=>1),
     );
 
-    function __construct($str=null, $lowercase=true, $forceTagsClosed=true, $target_charset=DEFAULT_TARGET_CHARSET, $stripRN=true, $defaultBRText=DEFAULT_BR_TEXT, $defaultSpanText=DEFAULT_SPAN_TEXT)
+    function __construct($str=null, $lowercase=true, $forceTagsClosed=true, $stripRN=true, $defaultBRText=DEFAULT_BR_TEXT, $defaultSpanText=DEFAULT_SPAN_TEXT)
     {
         if ($str) {
             if (preg_match("/^http:\/\//i",$str) || is_file($str)) {
@@ -1044,7 +953,6 @@ class simple_html_dom
         if (!$forceTagsClosed) {
             $this->optional_closing_array=array();
         }
-        $this->_target_charset = $target_charset;
     }
 
     function __destruct()
@@ -1082,7 +990,6 @@ class simple_html_dom
         while ($this->parse());
         // end
         $this->root->_[HDOM_INFO_END] = $this->cursor;
-        $this->parse_charset();
 
         // make load function chainable
         return $this;
@@ -1210,85 +1117,6 @@ class simple_html_dom
         $node->_[HDOM_INFO_TEXT] = $s;
         $this->link_nodes($node, false);
         return true;
-    }
-
-    // PAPERG - dkchou - added this to try to identify the character set of the page we have just parsed so we know better how to spit it out later.
-    // NOTE:  IF you provide a routine called get_last_retrieve_url_contents_content_type which returns the CURLINFO_CONTENT_TYPE from the last curl_exec
-    // (or the content_type header from the last transfer), we will parse THAT, and if a charset is specified, we will use it over any other mechanism.
-    protected function parse_charset()
-    {
-        global $debug_object;
-
-        $charset = null;
-
-        if (function_exists('get_last_retrieve_url_contents_content_type')) {
-            $contentTypeHeader = get_last_retrieve_url_contents_content_type();
-            $success = preg_match('/charset=(.+)/', $contentTypeHeader, $matches);
-            if ($success) {
-                $charset = $matches[1];
-                if (is_object($debug_object)) {
-                    $debug_object->debug_log(2, 'header content-type found charset of: ' . $charset);
-                }
-            }
-        }
-
-        if (empty($charset)) {
-            $el = $this->root->find('meta[http-equiv=Content-Type]',0, true);
-            if (!empty($el)) {
-                $fullvalue = $el->content;
-                if (is_object($debug_object)) {
-                    $debug_object->debug_log(2, 'meta content-type tag found' . $fullvalue);
-                }
-
-                if (!empty($fullvalue)) {
-                    $success = preg_match('/charset=(.+)/i', $fullvalue, $matches);
-                    if ($success) {
-                        $charset = $matches[1];
-                    } else {
-                        // If there is a meta tag, and they don't specify the character set, research says that it's typically ISO-8859-1
-                        if (is_object($debug_object)) {
-                            $debug_object->debug_log(2, 'meta content-type tag couldn\'t be parsed. using iso-8859 default.');
-                        }
-                        $charset = 'ISO-8859-1';
-                    }
-                }
-            }
-        }
-
-        // If we couldn't find a charset above, then lets try to detect one based on the text we got...
-        if (empty($charset)) {
-            // Use this in case mb_detect_charset isn't installed/loaded on this machine.
-            $charset = false;
-            if (function_exists('mb_detect_encoding')) {
-                // Have php try to detect the encoding from the text given to us.
-                $charset = mb_detect_encoding($this->root->plaintext . "ascii", $encoding_list = array( "UTF-8", "CP1252" ) );
-                if (is_object($debug_object)) {
-                    $debug_object->debug_log(2, 'mb_detect found: ' . $charset);
-                }
-            }
-
-            // and if this doesn't work...  then we need to just wrongheadedly assume it's UTF-8 so that we can move on - cause this will usually give us most of what we need...
-            if ($charset === false) {
-                if (is_object($debug_object)) {
-                    $debug_object->debug_log(2, 'since mb_detect failed - using default of utf-8');
-                }
-                $charset = 'UTF-8';
-            }
-        }
-
-        // Since CP1252 is a superset, if we get one of it's subsets, we want it instead.
-        if ((strtolower($charset) == strtolower('ISO-8859-1')) || (strtolower($charset) == strtolower('Latin1')) || (strtolower($charset) == strtolower('Latin-1'))) {
-            if (is_object($debug_object)) {
-                $debug_object->debug_log(2, 'replacing ' . $charset . ' with CP1252 as its a superset');
-            }
-            $charset = 'CP1252';
-        }
-
-        if (is_object($debug_object)) {
-            $debug_object->debug_log(1, 'EXIT - ' . $charset);
-        }
-
-        return $this->_charset = $charset;
     }
 
     // read tag info
@@ -1621,7 +1449,7 @@ class simple_html_dom
 
     protected function copy_until_char_escape($char)
     {
-        if ($this->char===null) {
+        if ($this->char === null) {
             return '';
         }
 
@@ -1634,7 +1462,7 @@ class simple_html_dom
                 return $ret;
             }
 
-            if ($pos===$this->pos) {
+            if ($pos === $this->pos) {
                 return '';
             }
 
@@ -1737,10 +1565,6 @@ class simple_html_dom
                 return $this->root->innertext();
             case 'plaintext':
                 return $this->root->text();
-            case 'charset':
-                return $this->_charset;
-            case 'target_charset':
-                return $this->_target_charset;
         }
     }
 
