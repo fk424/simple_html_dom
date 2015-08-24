@@ -23,23 +23,20 @@ define('HDOM_INFO_INNER',   5);
 define('HDOM_INFO_OUTER',   6);
 define('HDOM_INFO_ENDSPACE',7);
 
-define('DEFAULT_BR_TEXT', "\r\n");
-define('DEFAULT_SPAN_TEXT', " ");
-
 define('MAX_FILE_SIZE', 600000);
 // helper functions
 // -----------------------------------------------------------------------------
 // $maxlen is defined in the code as PHP_STREAM_COPY_ALL which is defined as -1.
 
 // get html dom from string
-function str_get_html($str, $lowercase=true, $forceTagsClosed=true, $stripRN=true, $defaultBRText=DEFAULT_BR_TEXT, $defaultSpanText=DEFAULT_SPAN_TEXT)
+function str_get_html($str, $forceTagsClosed=true)
 {
-    $dom = new simple_html_dom(null, $lowercase, $forceTagsClosed, $stripRN, $defaultBRText, $defaultSpanText);
+    $dom = new simple_html_dom(null, $forceTagsClosed);
     if (empty($str) || strlen($str) > MAX_FILE_SIZE) {
         $dom->clear();
         return false;
     }
-    $dom->load($str, $lowercase, $stripRN);
+    $dom->load($str);
     return $dom;
 }
 
@@ -400,7 +397,7 @@ class simple_html_dom_node
 
     // find elements by css selector
     //PaperG - added ability for find to lowercase the value of the selector.
-    function find($selector, $idx=null, $lowercase=false)
+    function find($selector, $idx=null)
     {
         $selectors = $this->parse_selector($selector);
         if (($count=count($selectors)) === 0) {
@@ -427,7 +424,7 @@ class simple_html_dom_node
                 foreach ($head as $k=>$v) {
                     $n = ($k===-1) ? $this->dom->root : $this->dom->nodes[$k];
                     //PaperG - Pass this optional parameter on to the seek function.
-                    $n->seek($selectors[$c][$l], $ret, $lowercase);
+                    $n->seek($selectors[$c][$l], $ret);
                 }
                 $head = $ret;
             }
@@ -459,7 +456,7 @@ class simple_html_dom_node
 
     // seek for given conditions
     // PaperG - added parameter to allow for case insensitive testing of the value of a selector.
-    protected function seek($selector, &$ret, $lowercase=false)
+    protected function seek($selector, &$ret)
     {
         list($tag, $key, $val, $exp, $no_key) = $selector;
 
@@ -526,22 +523,14 @@ class simple_html_dom_node
                     $nodeKeyValue = $node->attr[$key];
                 }
                 //PaperG - If lowercase is set, do a case insensitive test of the value of the selector.
-                if ($lowercase) {
-                    $check = $this->match($exp, strtolower($val), strtolower($nodeKeyValue));
-                } else {
-                    $check = $this->match($exp, $val, $nodeKeyValue);
-                }
+                $check = $this->match($exp, strtolower($val), strtolower($nodeKeyValue));
 
                 // handle multiple class
                 if (!$check && strcasecmp($key, 'class') === 0) {
                     foreach (explode(' ',$node->attr[$key]) as $k) {
                         // Without this, there were cases where leading, trailing, or double spaces lead to our comparing blanks - bad form.
                         if (!empty($k)) {
-                            if ($lowercase) {
-                                $check = $this->match($exp, strtolower($val), strtolower($k));
-                            } else {
-                                $check = $this->match($exp, $val, $k);
-                            }
+                            $check = $this->match($exp, strtolower($val), strtolower($k));
                             if ($check) {
                                 break;
                             }
@@ -623,10 +612,8 @@ class simple_html_dom_node
             }
 
             // convert to lowercase
-            if ($this->dom->lowercase) {
-                $tag = strtolower($tag);
-                $key = strtolower($key);
-            }
+            $tag = strtolower($tag);
+            $key = strtolower($key);
             //elements that do NOT have the specified attribute
             if (isset($key[0]) && $key[0]==='!') {
                 $key = substr($key, 1);
@@ -743,7 +730,7 @@ class simple_html_dom_node
         return $this->parent();
     }
 
-    function childNodes($idx=-1) {
+    function childNodes($idx = -1) {
         return $this->children($idx);
     }
 
@@ -791,7 +778,6 @@ class simple_html_dom
     public $root = null;
     public $nodes = array();
     public $callback = null;
-    public $lowercase = false;
     // Used to keep track of how large the text was when we started.
     public $original_size;
     public $size;
@@ -807,8 +793,8 @@ class simple_html_dom
     protected $token_slash = " />\r\n\t";
     protected $token_attr = ' >';
     // Note that this is referenced by a child node, and so it needs to be public for that node to see this information.
-    protected $default_br_text = "";
-    public $default_span_text = "";
+    protected $default_br_text = "\n";
+    public $default_span_text = " ";
 
     // use isset instead of in_array, performance boost about 30%...
     protected $self_closing_tags = array('img' => 1, 'br' => 1, 'input' => 1, 'meta' => 1, 'link' => 1, 'hr' => 1, 'base' => 1, 'embed' => 1, 'spacer' => 1);
@@ -829,10 +815,10 @@ class simple_html_dom
         'option' => array('option' => 1),
     );
 
-    function __construct($str=null, $lowercase=true, $forceTagsClosed=true, $stripRN=true, $defaultBRText=DEFAULT_BR_TEXT, $defaultSpanText=DEFAULT_SPAN_TEXT)
+    function __construct($str=null, $forceTagsClosed=true)
     {
         if ($str) {
-            $this->load($str, $lowercase, $stripRN, $defaultBRText, $defaultSpanText);
+            $this->load($str);
         }
         // Forcing tags to be closed implies that we don't trust the html, but it can lead to parsing errors if we SHOULD trust the html.
         if (!$forceTagsClosed) {
@@ -846,10 +832,10 @@ class simple_html_dom
     }
 
     // load html from string
-    function load($str, $lowercase=true, $stripRN=true, $defaultBRText=DEFAULT_BR_TEXT, $defaultSpanText=DEFAULT_SPAN_TEXT, $ignoreNoise=true)
+    function load($str, $ignoreNoise=true)
     {
         // prepare
-        $this->prepare($str, $lowercase, $stripRN, $defaultBRText, $defaultSpanText);
+        $this->prepare($str);
         // strip out cdata
         $this->remove_noise("'<!\[CDATA\[(.*?)\]\]>'is", true);
         // strip out comments
@@ -892,9 +878,9 @@ class simple_html_dom
 
     // find dom node by css selector
     // Paperg - allow us to specify that we want case insensitive testing of the value of the selector.
-    function find($selector, $idx=null, $lowercase=false)
+    function find($selector, $idx=null)
     {
-        return $this->root->find($selector, $idx, $lowercase);
+        return $this->root->find($selector, $idx);
     }
 
     // clean up memory due to php5 circular references memory leak...
@@ -929,23 +915,18 @@ class simple_html_dom
     }
 
     // prepare HTML data and init everything
-    protected function prepare($str, $lowercase = true, $stripRN = true, $defaultBRText = DEFAULT_BR_TEXT, $defaultSpanText = DEFAULT_SPAN_TEXT, $ignoreNoise = true)
+    protected function prepare($str, $ignoreNoise = true)
     {
         $this->clear();
 
-        // set the length of content before we do anything to it.
-        $this->size = strlen($str);
         // Save the original size of the html that we got in.  It might be useful to someone.
-        $this->original_size = $this->size;
+        $this->original_size = strlen($str);
 
-        //before we save the string as the doc...  strip out the \r \n's if we are told to.
-        if ($stripRN) {
-            $str = str_replace("\r", " ", $str);
-            $str = str_replace("\n", " ", $str);
+        $str = str_replace("\r", " ", $str);
+        $str = str_replace("\n", " ", $str);
 
-            // set the length of content since we have changed it.
-            $this->size = strlen($str);
-        }
+        // set the length of content since we have changed it.
+        $this->size = strlen($str);
 
         $this->doc = $str;
         $this->pos = 0;
@@ -953,9 +934,6 @@ class simple_html_dom
         $this->noise = array();
         $this->ignore_noise = $ignoreNoise;
         $this->nodes = array();
-        $this->lowercase = $lowercase;
-        $this->default_br_text = $defaultBRText;
-        $this->default_span_text = $defaultSpanText;
         $this->root = new simple_html_dom_node($this);
         $this->root->tag = 'root';
         $this->root->_[HDOM_INFO_BEGIN] = -1;
@@ -1104,8 +1082,7 @@ class simple_html_dom
 
         // begin tag
         $node->nodetype = HDOM_TYPE_ELEMENT;
-        $tag_lower = strtolower($tag);
-        $node->tag = ($this->lowercase) ? $tag_lower : $tag;
+        $node->tag = strtolower($tag);
 
         // handle optional closing tags
         if (isset($this->optional_closing_tags[$tag_lower])) {
@@ -1158,8 +1135,8 @@ class simple_html_dom
             if ($name!=='/' && $name!=='') {
                 $space[1] = $this->copy_skip($this->token_blank);
                 $name = $this->restore_noise($name);
-                if ($this->lowercase) $name = strtolower($name);
-                if ($this->char==='=') {
+                $name = strtolower($name);
+                if ($this->char === '=') {
                     $this->char = (++$this->pos<$this->size) ? $this->doc[$this->pos] : null; // next
                     $this->parse_attr($node, $name, $space);
                 }
