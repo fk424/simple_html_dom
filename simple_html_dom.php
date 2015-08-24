@@ -247,21 +247,6 @@ class simple_html_dom_node
         return $this->parent->children[$idx];
     }
 
-    // function to locate a specific ancestor tag in the path to the root.
-    function find_ancestor_tag($tag)
-    {
-        // Start by including ourselves in the comparison.
-        $returnDom = $this;
-
-        while (!is_null($returnDom)) {
-            if ($returnDom->tag == $tag) {
-                break;
-            }
-            $returnDom = $returnDom->parent;
-        }
-        return $returnDom;
-    }
-
     // get dom node's inner html
     function innertext()
     {
@@ -483,7 +468,7 @@ class simple_html_dom_node
             $count = 0;
             foreach ($this->children as $c) {
                 if ($tag==='*' || $tag===$c->tag) {
-                    if (++$count==$key) {
+                    if (++$count == $key) {
                         $ret[$c->_[HDOM_INFO_BEGIN]] = 1;
                         return;
                     }
@@ -578,9 +563,9 @@ class simple_html_dom_node
     protected function match($exp, $pattern, $value) {
         switch ($exp) {
             case '=':
-                return ($value===$pattern);
+                return ($value === $pattern);
             case '!=':
-                return ($value!==$pattern);
+                return ($value !== $pattern);
             case '^=':
                 return preg_match("/^".preg_quote($pattern,'/')."/", $value);
             case '$=':
@@ -715,83 +700,6 @@ class simple_html_dom_node
         if (isset($this->attr[$name])) {
             unset($this->attr[$name]);
         }
-    }
-
-    /**
-     * Function to try a few tricks to determine the displayed size of an img on the page.
-     * NOTE: This will ONLY work on an IMG tag. Returns FALSE on all other tag types.
-     *
-     * @author John Schlick
-     * @version April 19 2012
-     * @return array an array containing the 'height' and 'width' of the image on the page or -1 if we can't figure it out.
-     */
-    function get_display_size()
-    {
-        $width = -1;
-        $height = -1;
-
-        if ($this->tag !== 'img') {
-            return false;
-        }
-
-        // See if there is aheight or width attribute in the tag itself.
-        if (isset($this->attr['width'])) {
-            $width = $this->attr['width'];
-        }
-
-        if (isset($this->attr['height'])) {
-            $height = $this->attr['height'];
-        }
-
-        // Now look for an inline style.
-        if (isset($this->attr['style'])) {
-            // Thanks to user gnarf from stackoverflow for this regular expression.
-            $attributes = array();
-            preg_match_all("/([\w-]+)\s*:\s*([^;]+)\s*;?/", $this->attr['style'], $matches, PREG_SET_ORDER);
-            foreach ($matches as $match) {
-              $attributes[$match[1]] = $match[2];
-            }
-
-            // If there is a width in the style attributes:
-            if (isset($attributes['width']) && $width == -1) {
-                // check that the last two characters are px (pixels)
-                if (strtolower(substr($attributes['width'], -2)) == 'px') {
-                    $proposed_width = substr($attributes['width'], 0, -2);
-                    // Now make sure that it's an integer and not something stupid.
-                    if (filter_var($proposed_width, FILTER_VALIDATE_INT)) {
-                        $width = $proposed_width;
-                    }
-                }
-            }
-
-            // If there is a width in the style attributes:
-            if (isset($attributes['height']) && $height == -1) {
-                // check that the last two characters are px (pixels)
-                if (strtolower(substr($attributes['height'], -2)) == 'px') {
-                    $proposed_height = substr($attributes['height'], 0, -2);
-                    // Now make sure that it's an integer and not something stupid.
-                    if (filter_var($proposed_height, FILTER_VALIDATE_INT)) {
-                        $height = $proposed_height;
-                    }
-                }
-            }
-        }
-
-        // Future enhancement:
-        // Look in the tag to see if there is a class or id specified that has a height or width attribute to it.
-
-        // Far future enhancement
-        // Look at all the parent tags of this image to see if they specify a class or id that has an img selector that specifies a height or width
-        // Note that in this case, the class or id will have the img subselector for it to apply to the image.
-
-        // ridiculously far future development
-        // If the class or id is specified in a SEPARATE css file thats not on the page, go get it and do what we were just doing for the ones on the page.
-
-        $result = array(
-            'height' => $height,
-            'width' => $width,
-        );
-        return $result;
     }
 
     // camel naming conventions
@@ -1084,7 +992,7 @@ class simple_html_dom
         $this->char = (++$this->pos < $this->size) ? $this->doc[$this->pos] : null; // next
 
         // end tag
-        if ($this->char==='/') {
+        if ($this->char === '/') {
             $this->char = (++$this->pos<$this->size) ? $this->doc[$this->pos] : null; // next
             // This represents the change in the simple_html_dom trunk from revision 180 to 181.
             // $this->skip($this->token_blank_t);
@@ -1099,7 +1007,7 @@ class simple_html_dom
             $parent_lower = strtolower($this->parent->tag);
             $tag_lower = strtolower($tag);
 
-            if ($parent_lower!==$tag_lower) {
+            if ($parent_lower !== $tag_lower) {
                 if (isset($this->optional_closing_tags[$parent_lower]) && isset($this->block_tags[$tag_lower])) {
                     $this->parent->_[HDOM_INFO_END] = 0;
                     $org_parent = $this->parent;
@@ -1108,7 +1016,7 @@ class simple_html_dom
                         $this->parent = $this->parent->parent;
                     }
 
-                    if (strtolower($this->parent->tag)!==$tag_lower) {
+                    if (strtolower($this->parent->tag) !== $tag_lower) {
                         $this->parent = $org_parent; // restore origonal parent
                         if ($this->parent->parent) {
                             $this->parent = $this->parent->parent;
@@ -1124,7 +1032,7 @@ class simple_html_dom
                         $this->parent = $this->parent->parent;
                     }
                     if (strtolower($this->parent->tag) !== $tag_lower) {
-                        $this->parent = $org_parent; // restore origonal parent
+                        $this->parent = $org_parent; //  restore origonal parent
                         $this->parent->_[HDOM_INFO_END] = $this->cursor;
                         return $this->as_text_node($tag);
                     }
@@ -1152,24 +1060,26 @@ class simple_html_dom
         $node->tag_start = $begin_tag_pos;
 
         // doctype, cdata & comments...
-        if (isset($tag[0]) && $tag[0]==='!') {
+        if (isset($tag[0]) && $tag[0] === '!') {
             $node->_[HDOM_INFO_TEXT] = '<' . $tag . $this->copy_until_char('>');
 
-            if (isset($tag[2]) && $tag[1]==='-' && $tag[2]==='-') {
+            if (isset($tag[2]) && $tag[1] === '-' && $tag[2] === '-') {
                 $node->nodetype = HDOM_TYPE_COMMENT;
                 $node->tag = 'comment';
             } else {
                 $node->nodetype = HDOM_TYPE_UNKNOWN;
                 $node->tag = 'unknown';
             }
-            if ($this->char==='>') $node->_[HDOM_INFO_TEXT].='>';
+            if ($this->char === '>') {
+                $node->_[HDOM_INFO_TEXT] .= '>';
+            }
             $this->link_nodes($node, true);
             $this->char = (++$this->pos<$this->size) ? $this->doc[$this->pos] : null; // next
             return true;
         }
 
         // text
-        if ($pos=strpos($tag, '<')!==false) {
+        if ($pos=strpos($tag, '<') !== false) {
             $tag = '<' . substr($tag, 0, -1);
             $node->_[HDOM_INFO_TEXT] = $tag;
             $this->link_nodes($node, false);
@@ -1179,12 +1089,14 @@ class simple_html_dom
 
         if (!preg_match("/^[\w-:]+$/", $tag)) {
             $node->_[HDOM_INFO_TEXT] = '<' . $tag . $this->copy_until('<>');
-            if ($this->char==='<') {
+            if ($this->char === '<') {
                 $this->link_nodes($node, false);
                 return true;
             }
 
-            if ($this->char==='>') $node->_[HDOM_INFO_TEXT].='>';
+            if ($this->char === '>') {
+                $node->_[HDOM_INFO_TEXT] .= '>';
+            }
             $this->link_nodes($node, false);
             $this->char = (++$this->pos<$this->size) ? $this->doc[$this->pos] : null; // next
             return true;
@@ -1196,8 +1108,7 @@ class simple_html_dom
         $node->tag = ($this->lowercase) ? $tag_lower : $tag;
 
         // handle optional closing tags
-        if (isset($this->optional_closing_tags[$tag_lower]) )
-        {
+        if (isset($this->optional_closing_tags[$tag_lower])) {
             while (isset($this->optional_closing_tags[$tag_lower][strtolower($this->parent->tag)]))
             {
                 $this->parent->_[HDOM_INFO_END] = 0;
@@ -1210,15 +1121,12 @@ class simple_html_dom
         $space = array($this->copy_skip($this->token_blank), '', '');
 
         // attributes
-        do
-        {
-            if ($this->char!==null && $space[0]==='')
-            {
+        do {
+            if ($this->char!==null && $space[0]==='') {
                 break;
             }
             $name = $this->copy_until($this->token_equal);
-            if ($guard===$this->pos)
-            {
+            if ($guard === $this->pos) {
                 $this->char = (++$this->pos<$this->size) ? $this->doc[$this->pos] : null; // next
                 continue;
             }
@@ -1263,24 +1171,23 @@ class simple_html_dom
                 }
                 $node->_[HDOM_INFO_SPACE][] = $space;
                 $space = array($this->copy_skip($this->token_blank), '', '');
-            }
-            else
+            } else {
                 break;
+            }
         } while ($this->char!=='>' && $this->char!=='/');
 
         $this->link_nodes($node, true);
         $node->_[HDOM_INFO_ENDSPACE] = $space[0];
 
         // check self closing
-        if ($this->copy_until_char_escape('>')==='/')
-        {
+        if ($this->copy_until_char_escape('>') === '/') {
             $node->_[HDOM_INFO_ENDSPACE] .= '/';
             $node->_[HDOM_INFO_END] = 0;
-        }
-        else
-        {
+        } else {
             // reset parent
-            if (!isset($this->self_closing_tags[strtolower($node->tag)])) $this->parent = $node;
+            if (!isset($this->self_closing_tags[strtolower($node->tag)])) {
+                $this->parent = $node;
+            }
         }
         $this->char = (++$this->pos<$this->size) ? $this->doc[$this->pos] : null; // next
 
