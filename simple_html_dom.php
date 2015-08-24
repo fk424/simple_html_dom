@@ -956,30 +956,30 @@ class simple_html_dom
 
         // end tag
         if ($this->char === '/') {
-            $this->char = (++$this->pos<$this->size) ? $this->doc[$this->pos] : null; // next
+            $this->char = (++$this->pos < $this->size) ? $this->doc[$this->pos] : null; // next
             // This represents the change in the simple_html_dom trunk from revision 180 to 181.
             // $this->skip($this->token_blank_t);
             $this->skip($this->token_blank);
             $tag = $this->copy_until_char('>');
 
             // skip attributes in end tag
-            if (($pos = strpos($tag, ' '))!==false) {
+            if (($pos = strpos($tag, ' ')) !== false) {
                 $tag = substr($tag, 0, $pos);
             }
 
-            $parent_lower = strtolower($this->parent->tag);
-            $tag_lower = strtolower($tag);
+            $parent_tag = strtolower($this->parent->tag);
+            $tag = strtolower($tag);
 
-            if ($parent_lower !== $tag_lower) {
-                if (isset($this->optional_closing_tags[$parent_lower]) && isset($this->block_tags[$tag_lower])) {
+            if ($parent_tag !== $tag) {
+                if (isset($this->optional_closing_tags[$parent_tag]) && isset($this->block_tags[$tag])) {
                     $this->parent->_[HDOM_INFO_END] = 0;
                     $org_parent = $this->parent;
 
-                    while (($this->parent->parent) && strtolower($this->parent->tag) !== $tag_lower) {
+                    while (($this->parent->parent) && strtolower($this->parent->tag) !== $tag) {
                         $this->parent = $this->parent->parent;
                     }
 
-                    if (strtolower($this->parent->tag) !== $tag_lower) {
+                    if (strtolower($this->parent->tag) !== $tag) {
                         $this->parent = $org_parent; // restore origonal parent
                         if ($this->parent->parent) {
                             $this->parent = $this->parent->parent;
@@ -987,19 +987,19 @@ class simple_html_dom
                         $this->parent->_[HDOM_INFO_END] = $this->cursor;
                         return $this->as_text_node($tag);
                     }
-                } elseif (($this->parent->parent) && isset($this->block_tags[$tag_lower])) {
+                } elseif (($this->parent->parent) && isset($this->block_tags[$tag])) {
                     $this->parent->_[HDOM_INFO_END] = 0;
                     $org_parent = $this->parent;
 
-                    while (($this->parent->parent) && strtolower($this->parent->tag) !== $tag_lower) {
+                    while (($this->parent->parent) && strtolower($this->parent->tag) !== $tag) {
                         $this->parent = $this->parent->parent;
                     }
-                    if (strtolower($this->parent->tag) !== $tag_lower) {
+                    if (strtolower($this->parent->tag) !== $tag) {
                         $this->parent = $org_parent; //  restore origonal parent
                         $this->parent->_[HDOM_INFO_END] = $this->cursor;
                         return $this->as_text_node($tag);
                     }
-                } elseif (($this->parent->parent) && strtolower($this->parent->parent->tag) === $tag_lower) {
+                } elseif (($this->parent->parent) && strtolower($this->parent->parent->tag) === $tag) {
                     $this->parent->_[HDOM_INFO_END] = 0;
                     $this->parent = $this->parent->parent;
                 } else {
@@ -1067,11 +1067,12 @@ class simple_html_dom
 
         // begin tag
         $node->nodetype = HDOM_TYPE_ELEMENT;
-        $node->tag = strtolower($tag);
+        $tag = strtolower($tag);
+        $node->tag = $tag;
 
         // handle optional closing tags
-        if (isset($this->optional_closing_tags[$tag_lower])) {
-            while (isset($this->optional_closing_tags[$tag_lower][strtolower($this->parent->tag)]))
+        if (isset($this->optional_closing_tags[$tag])) {
+            while (isset($this->optional_closing_tags[$tag][strtolower($this->parent->tag)]))
             {
                 $this->parent->_[HDOM_INFO_END] = 0;
                 $this->parent = $this->parent->parent;
