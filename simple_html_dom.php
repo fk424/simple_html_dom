@@ -28,7 +28,7 @@ define('HDOM_INFO_ENDSPACE',7);
 // $maxlen is defined in the code as PHP_STREAM_COPY_ALL which is defined as -1.
 
 // get html dom from string
-function str_get_html($str, $forceTagsClosed=true)
+function str_get_html($str, $forceTagsClosed = true)
 {
     $dom = new simple_html_dom(null, $forceTagsClosed);
     $dom->load($str);
@@ -602,18 +602,18 @@ class simple_html_dom_node
             $tag = strtolower($tag);
             $key = strtolower($key);
             //elements that do NOT have the specified attribute
-            if (isset($key[0]) && $key[0]==='!') {
+            if (isset($key[0]) && $key[0] === '!') {
                 $key = substr($key, 1);
                 $no_key = true;
             }
 
             $result[] = array($tag, $key, $val, $exp, $no_key);
-            if (trim($m[7])===',') {
+            if (trim($m[7]) === ',') {
                 $selectors[] = $result;
                 $result = array();
             }
         }
-        if (count($result)>0) {
+        if (count($result) > 0) {
             $selectors[] = $result;
         }
         return $selectors;
@@ -699,7 +699,7 @@ class simple_html_dom_node
         return $this->find("#$id", 0);
     }
 
-    function getElementsById($id, $idx=null) {
+    function getElementsById($id, $idx = null) {
         return $this->find("#$id", $idx);
     }
 
@@ -707,7 +707,7 @@ class simple_html_dom_node
         return $this->find($name, 0);
     }
 
-    function getElementsByTagName($name, $idx=null) {
+    function getElementsByTagName($name, $idx = null) {
         return $this->find($name, $idx);
     }
 
@@ -800,7 +800,7 @@ class simple_html_dom
         'option' => array('option' => 1),
     );
 
-    function __construct($str=null, $forceTagsClosed=true)
+    function __construct($str = null, $forceTagsClosed = true)
     {
         if ($str) {
             $this->load($str);

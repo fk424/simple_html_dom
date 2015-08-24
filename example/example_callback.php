@@ -16,7 +16,8 @@ function my_callback($element) {
 
 
 // 2. create HTML Dom
-$html = file_get_html('http://www.google.com/');
+$html = file_get_contents('http://www.google.com/');
+$html = str_get_html($html);
 
 
 // 3. Register the callback function with it's function name
