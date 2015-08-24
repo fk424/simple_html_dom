@@ -23,7 +23,6 @@ define('HDOM_INFO_INNER',   5);
 define('HDOM_INFO_OUTER',   6);
 define('HDOM_INFO_ENDSPACE',7);
 
-define('MAX_FILE_SIZE', 600000);
 // helper functions
 // -----------------------------------------------------------------------------
 // $maxlen is defined in the code as PHP_STREAM_COPY_ALL which is defined as -1.
@@ -32,10 +31,6 @@ define('MAX_FILE_SIZE', 600000);
 function str_get_html($str, $forceTagsClosed=true)
 {
     $dom = new simple_html_dom(null, $forceTagsClosed);
-    if (empty($str) || strlen($str) > MAX_FILE_SIZE) {
-        $dom->clear();
-        return false;
-    }
     $dom->load($str);
     return $dom;
 }
@@ -347,14 +342,6 @@ class simple_html_dom_node
         return $ret;
     }
 
-    function xmltext()
-    {
-        $ret = $this->innertext();
-        $ret = str_ireplace('<![CDATA[', '', $ret);
-        $ret = str_replace(']]>', '', $ret);
-        return $ret;
-    }
-
     // build node's text with tag
     function makeup()
     {
@@ -366,11 +353,11 @@ class simple_html_dom_node
         $ret = '<'.$this->tag;
         $i = -1;
 
-        foreach ($this->attr as $key=>$val) {
+        foreach ($this->attr as $key => $val) {
             ++$i;
 
             // skip removed attribute
-            if ($val===null || $val===false) {
+            if ($val === null || $val === false) {
                 continue;
             }
 
@@ -397,7 +384,7 @@ class simple_html_dom_node
 
     // find elements by css selector
     //PaperG - added ability for find to lowercase the value of the selector.
-    function find($selector, $idx=null)
+    function find($selector, $idx = null)
     {
         $selectors = $this->parse_selector($selector);
         if (($count=count($selectors)) === 0) {
@@ -408,8 +395,8 @@ class simple_html_dom_node
         // find each selector
         for ($c=0; $c<$count; ++$c) {
             // The change on the below line was documented on the sourceforge code tracker id 2788009
-            // used to be: if (($levle=count($selectors[0]))===0) return array();
-            if (($levle = count($selectors[$c])) === 0) {
+            // used to be: if (($level=count($selectors[0]))===0) return array();
+            if (($level = count($selectors[$c])) === 0) {
                 return array();
             }
             if (!isset($this->_[HDOM_INFO_BEGIN])) {
@@ -419,7 +406,7 @@ class simple_html_dom_node
             $head = array($this->_[HDOM_INFO_BEGIN]=>1);
 
             // handle descendant selectors, no recursive!
-            for ($l=0; $l<$levle; ++$l) {
+            for ($l=0; $l<$level; ++$l) {
                 $ret = array();
                 foreach ($head as $k=>$v) {
                     $n = ($k===-1) ? $this->dom->root : $this->dom->nodes[$k];
@@ -644,8 +631,6 @@ class simple_html_dom_node
             return $this->innertext();
         case 'plaintext':
             return $this->text();
-        case 'xmltext':
-            return $this->xmltext();
         default:
             return array_key_exists($name, $this->attr);
         }
@@ -1183,7 +1168,7 @@ class simple_html_dom
     protected function parse_attr($node, $name, &$space)
     {
         // Per sourceforge: http://sourceforge.net/tracker/?func=detail&aid=3061408&group_id=218559&atid=1044037
-        // If the attribute is already defined inside a tag, only pay atetntion to the first one as opposed to the last one.
+        // If the attribute is already defined inside a tag, only pay attention to the first one as opposed to the last one.
         if (isset($node->attr[$name])) {
             return;
         }
@@ -1397,7 +1382,7 @@ class simple_html_dom
     }
 
     // camel naming conventions
-    function childNodes($idx=-1) {
+    function childNodes($idx = -1) {
         return $this->root->childNodes($idx);
     }
 
