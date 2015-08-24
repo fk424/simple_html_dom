@@ -250,19 +250,10 @@ class simple_html_dom_node
     // function to locate a specific ancestor tag in the path to the root.
     function find_ancestor_tag($tag)
     {
-        global $debug_object;
-        if (is_object($debug_object)) {
-            $debug_object->debug_log_entry(1);
-        }
-
         // Start by including ourselves in the comparison.
         $returnDom = $this;
 
         while (!is_null($returnDom)) {
-            if (is_object($debug_object)) {
-                $debug_object->debug_log(2, "Current tag is: " . $returnDom->tag);
-            }
-
             if ($returnDom->tag == $tag) {
                 break;
             }
@@ -291,17 +282,6 @@ class simple_html_dom_node
     // get dom node's outer text (with tag)
     function outertext()
     {
-        global $debug_object;
-        if (is_object($debug_object)) {
-            $text = '';
-            if ($this->tag == 'text') {
-                if (!empty($this->text)) {
-                    $text = " with text: " . $this->text;
-                }
-            }
-            $debug_object->debug_log(1, 'Innertext of tag: ' . $this->tag . $text);
-        }
-
         if ($this->tag === 'root') {
             return $this->innertext();
         }
@@ -496,11 +476,6 @@ class simple_html_dom_node
     // PaperG - added parameter to allow for case insensitive testing of the value of a selector.
     protected function seek($selector, &$ret, $lowercase=false)
     {
-        global $debug_object;
-        if (is_object($debug_object)) {
-            $debug_object->debug_log_entry(1);
-        }
-
         list($tag, $key, $val, $exp, $no_key) = $selector;
 
         // xpath index
@@ -565,18 +540,11 @@ class simple_html_dom_node
                     // this is a normal search, we want the value of that attribute of the tag.
                     $nodeKeyValue = $node->attr[$key];
                 }
-                if (is_object($debug_object)) {
-                    $debug_object->debug_log(2, "testing node: " . $node->tag . " for attribute: " . $key . $exp . $val . " where nodes value is: " . $nodeKeyValue);
-                }
-
                 //PaperG - If lowercase is set, do a case insensitive test of the value of the selector.
                 if ($lowercase) {
                     $check = $this->match($exp, strtolower($val), strtolower($nodeKeyValue));
                 } else {
                     $check = $this->match($exp, $val, $nodeKeyValue);
-                }
-                if (is_object($debug_object)) {
-                    $debug_object->debug_log(2, "after match: " . ($check ? "true" : "false"));
                 }
 
                 // handle multiple class
@@ -605,17 +573,9 @@ class simple_html_dom_node
             unset($node);
         }
         // It's passed by reference so this is actually what this function returns.
-        if (is_object($debug_object)) {
-            $debug_object->debug_log(1, "EXIT - ret: ", $ret);
-        }
     }
 
     protected function match($exp, $pattern, $value) {
-        global $debug_object;
-        if (is_object($debug_object)) {
-            $debug_object->debug_log_entry(1);
-        }
-
         switch ($exp) {
             case '=':
                 return ($value===$pattern);
@@ -635,11 +595,6 @@ class simple_html_dom_node
     }
 
     protected function parse_selector($selector_string) {
-        global $debug_object;
-        if (is_object($debug_object)) {
-            $debug_object->debug_log_entry(1);
-        }
-
         // pattern of CSS selectors, modified from mootools
         // Paperg: Add the colon to the attrbute, so that it properly finds <tag attr:ibute="something" > like google does.
         // Note: if you try to look at this attribute, yo MUST use getAttribute since $dom->x:y will fail the php syntax check.
@@ -649,9 +604,6 @@ class simple_html_dom_node
 //      $pattern = "/([\w-:\*]*)(?:\#([\w-]+)|\.([\w-]+))?(?:\[@?(!?[\w-]+)(?:([!*^$]?=)[\"']?(.*?)[\"']?)?\])?([\/, ]+)/is";
         $pattern = "/([\w-:\*]*)(?:\#([\w-]+)|\.([\w-]+))?(?:\[@?(!?[\w-:]+)(?:([!*^$]?=)[\"']?(.*?)[\"']?)?\])?([\/, ]+)/is";
         preg_match_all($pattern, trim($selector_string).' ', $matches, PREG_SET_ORDER);
-        if (is_object($debug_object)) {
-            $debug_object->debug_log(2, "Matches Array: ", $matches);
-        }
 
         $selectors = array();
         $result = array();
@@ -729,11 +681,6 @@ class simple_html_dom_node
 
     function __set($name, $value)
     {
-        global $debug_object;
-        if (is_object($debug_object)) {
-            $debug_object->debug_log_entry(1);
-        }
-
         switch ($name) {
         case 'outertext':
             return $this->_[HDOM_INFO_OUTER] = $value;
@@ -780,8 +727,6 @@ class simple_html_dom_node
      */
     function get_display_size()
     {
-        global $debug_object;
-
         $width = -1;
         $height = -1;
 
@@ -948,6 +893,7 @@ class simple_html_dom
     protected $cursor;
     protected $parent;
     protected $noise = array();
+    protected $ignore_noise = false;
     protected $token_blank = " \t\r\n";
     protected $token_equal = ' =/>';
     protected $token_slash = " />\r\n\t";
@@ -992,10 +938,8 @@ class simple_html_dom
     }
 
     // load html from string
-    function load($str, $lowercase=true, $stripRN=true, $defaultBRText=DEFAULT_BR_TEXT, $defaultSpanText=DEFAULT_SPAN_TEXT)
+    function load($str, $lowercase=true, $stripRN=true, $defaultBRText=DEFAULT_BR_TEXT, $defaultSpanText=DEFAULT_SPAN_TEXT, $ignoreNoise=true)
     {
-        global $debug_object;
-
         // prepare
         $this->prepare($str, $lowercase, $stripRN, $defaultBRText, $defaultSpanText);
         // strip out cdata
@@ -1077,7 +1021,7 @@ class simple_html_dom
     }
 
     // prepare HTML data and init everything
-    protected function prepare($str, $lowercase = true, $stripRN = true, $defaultBRText = DEFAULT_BR_TEXT, $defaultSpanText = DEFAULT_SPAN_TEXT)
+    protected function prepare($str, $lowercase = true, $stripRN = true, $defaultBRText = DEFAULT_BR_TEXT, $defaultSpanText = DEFAULT_SPAN_TEXT, $ignoreNoise = true)
     {
         $this->clear();
 
@@ -1099,6 +1043,7 @@ class simple_html_dom
         $this->pos = 0;
         $this->cursor = 1;
         $this->noise = array();
+        $this->ignore_noise = $ignoreNoise;
         $this->nodes = array();
         $this->lowercase = $lowercase;
         $this->default_br_text = $defaultBRText;
@@ -1489,23 +1434,19 @@ class simple_html_dom
 
     // remove noise from html content
     // save the noise in the $this->noise array.
-    protected function remove_noise($pattern, $remove_tag=false)
+    protected function remove_noise($pattern, $remove_tag = false)
     {
-        global $debug_object;
-        if (is_object($debug_object)) {
-            $debug_object->debug_log_entry(1);
-        }
-
         $count = preg_match_all($pattern, $this->doc, $matches, PREG_SET_ORDER|PREG_OFFSET_CAPTURE);
 
         for ($i=$count-1; $i>-1; --$i) {
-            $key = '___noise___'.sprintf('% 5d', count($this->noise)+1000);
-            if (is_object($debug_object)) {
-                $debug_object->debug_log(2, 'key is: ' . $key);
-            }
+            $key = '___noise___'.sprintf('% 5d', count($this->noise) + 1000);
             $idx = ($remove_tag) ? 0 : 1;
             $this->noise[$key] = $matches[$i][$idx][0];
-            $this->doc = substr_replace($this->doc, $key, $matches[$i][$idx][1], strlen($matches[$i][$idx][0]));
+            if ($this->ignore_noise) {
+                $this->doc = substr_replace($this->doc, '', $matches[$i][$idx][1], strlen($matches[$i][$idx][0]));
+            } else {
+                $this->doc = substr_replace($this->doc, $key, $matches[$i][$idx][1], strlen($matches[$i][$idx][0]));
+            }
         }
 
         // reset the length of content
@@ -1518,18 +1459,13 @@ class simple_html_dom
     // restore noise to html content
     function restore_noise($text)
     {
-        global $debug_object;
-        if (is_object($debug_object)) {
-            $debug_object->debug_log_entry(1);
+        if ($this->ignore_noise) {
+            return $text;
         }
-
         while (($pos = strpos($text, '___noise___')) !== false) {
             // Sometimes there is a broken piece of markup, and we don't GET the pos+11 etc... token which indicates a problem outside of us...
             if (strlen($text) > $pos+15) {
                 $key = '___noise___'.$text[$pos+11].$text[$pos+12].$text[$pos+13].$text[$pos+14].$text[$pos+15];
-                if (is_object($debug_object)) {
-                    $debug_object->debug_log(2, 'located key of: ' . $key);
-                }
 
                 if (isset($this->noise[$key])) {
                     $text = substr($text, 0, $pos).$this->noise[$key].substr($text, $pos+16);
@@ -1548,9 +1484,8 @@ class simple_html_dom
     // Sometimes we NEED one of the noise elements.
     function search_noise($text)
     {
-        global $debug_object;
-        if (is_object($debug_object)) {
-            $debug_object->debug_log_entry(1);
+        if ($this->ignore_noise) {
+            return null;
         }
 
         foreach($this->noise as $noiseElement) {
